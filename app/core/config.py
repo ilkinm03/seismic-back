@@ -1,0 +1,59 @@
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    DATABASE_URL: str = "sqlite:///./fracfocus_data/fracfocus.db"
+    ZIP_URL: str = "https://www.fracfocusdata.org/digitaldownload/FracFocusCSV.zip"
+    EXTRACT_DIR: str = "./fracfocus_data/extracted"
+
+    SYNC_ENABLED: bool = True
+    SYNC_CRON_DAY: int = 1
+    SYNC_CRON_HOUR: int = 2
+
+    REQUEST_TIMEOUT: int = 120
+    DOWNLOAD_CHUNK_SIZE: int = 1_048_576
+
+    # TexNet (Delaware Basin seismic catalog) — ArcGIS REST layer 0.
+    TEXNET_REST_URL: str = (
+        "https://maps.texnet.beg.utexas.edu/arcgis/rest/services/catalog/catalog_all/MapServer/0"
+    )
+    TEXNET_BBOX_MIN_LAT: float = 28.5
+    TEXNET_BBOX_MAX_LAT: float = 32.5
+    TEXNET_BBOX_MIN_LON: float = -105.5
+    TEXNET_BBOX_MAX_LON: float = -102.5
+
+    # USGS FDSN Event API — GeoJSON endpoint. Shares the TexNet bounding box.
+    USGS_FDSN_URL: str = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+    USGS_MIN_MAGNITUDE: float = 1.5
+    # Default start date for historical coverage (pre-TexNet). ISO 8601 date string.
+    USGS_START_TIME: str = "2000-01-01"
+
+    # EarthScope (IRIS) FDSN Station API — pipe-delimited text endpoint.
+    IRIS_STATION_URL: str = "https://service.iris.edu/fdsnws/station/1/query"
+
+    # RRC SWD — Texas Open Data Portal (Socrata). Dataset IDs are stable permanent identifiers.
+    RRC_UIC_URL: str = "https://data.texas.gov/resource/givw-z9t4.json"
+    RRC_H10_URL: str = "https://data.texas.gov/resource/qq2j-f2zm.json"
+    # Optional Socrata app token — removes rate limiting. Register free at data.texas.gov.
+    SOCRATA_APP_TOKEN: str = ""
+
+    # Event-context assembly search-window defaults (all overridable per request).
+    # SWD: 20 km / 10-year window — pressure fronts migrate far and slowly (Smye 2024).
+    # Frac: 10 km / 2-year window — poroelastic stress is shorter-range and transient.
+    ANALYSIS_SWD_RADIUS_KM: float = 20.0
+    ANALYSIS_SWD_WINDOW_DAYS: int = 3650
+    ANALYSIS_FRAC_RADIUS_KM: float = 10.0
+    ANALYSIS_FRAC_WINDOW_DAYS: int = 730
+    ANALYSIS_STATION_RADIUS_KM: float = 50.0
+
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
+    LOG_LEVEL: str = "INFO"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

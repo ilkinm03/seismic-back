@@ -1,0 +1,17 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.venv
+venv
+.env
+fracfocus_data/
+notebooklm_sources/
+documents/
+scripts/
+*.md
+uv.lock
+.DS_Store
