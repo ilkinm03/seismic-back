@@ -1,10 +1,25 @@
 from functools import lru_cache
+from urllib.parse import urlparse
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ZIP_ALLOWED_HOSTS = {"www.fracfocusdata.org"}
 
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./fracfocus_data/fracfocus.db"
     ZIP_URL: str = "https://www.fracfocusdata.org/digitaldownload/FracFocusCSV.zip"
+
+    @field_validator("ZIP_URL")
+    @classmethod
+    def zip_url_must_be_allowed(cls, v: str) -> str:
+        parsed = urlparse(v)
+        if parsed.scheme != "https" or parsed.hostname not in _ZIP_ALLOWED_HOSTS:
+            raise ValueError(
+                f"ZIP_URL must be an https URL on one of {_ZIP_ALLOWED_HOSTS}, got {v!r}"
+            )
+        return v
     EXTRACT_DIR: str = "./fracfocus_data/extracted"
 
     SYNC_ENABLED: bool = True

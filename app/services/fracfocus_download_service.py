@@ -2,8 +2,10 @@ import logging
 import zipfile
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
+
 import requests
-from app.core.config import Settings
+from app.core.config import Settings, _ZIP_ALLOWED_HOSTS
 
 log = logging.getLogger(__name__)
 
@@ -11,6 +13,14 @@ log = logging.getLogger(__name__)
 class DownloadService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+
+    @staticmethod
+    def _validate_url(url: str) -> None:
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or parsed.hostname not in _ZIP_ALLOWED_HOSTS:
+            raise ValueError(
+                f"Refusing request to {url!r}: must be https on {_ZIP_ALLOWED_HOSTS}"
+            )
 
     def check_remote_changed(
         self,
@@ -23,6 +33,7 @@ class DownloadService:
         Returns (changed, new_etag, new_last_modified).
         Conservatively returns changed=True when headers are absent or request fails.
         """
+        self._validate_url(url)
         try:
             response = requests.head(url, timeout=30, allow_redirects=True)
             response.raise_for_status()
@@ -47,6 +58,7 @@ class DownloadService:
 
     def stream_download_to_disk(self, url: str, dest_path: Path) -> Path:
         """Downloads url to dest_path using streaming to avoid loading the whole file into memory."""
+        self._validate_url(url)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Streaming download: {url} → {dest_path}")
 
