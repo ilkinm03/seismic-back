@@ -56,9 +56,17 @@ class DownloadService:
         )
         return changed, new_etag, new_last_modified
 
+    def _validate_dest_path(self, dest_path: Path) -> None:
+        base = Path(self.settings.EXTRACT_DIR).resolve().parent
+        if not dest_path.resolve().is_relative_to(base):
+            raise ValueError(
+                f"Refusing to write to {dest_path!r}: path is outside the configured data directory"
+            )
+
     def stream_download_to_disk(self, url: str, dest_path: Path) -> Path:
         """Downloads url to dest_path using streaming to avoid loading the whole file into memory."""
         self._validate_url(url)
+        self._validate_dest_path(dest_path)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Streaming download: {url} → {dest_path}")
 
@@ -95,11 +103,17 @@ class DownloadService:
         self, zip_path: Path, filenames: list[str], dest_dir: Path
     ) -> list[Path]:
         """Extracts only the listed filenames from the ZIP to dest_dir."""
+        dest_dir = dest_dir.resolve()
         dest_dir.mkdir(parents=True, exist_ok=True)
         extracted: list[Path] = []
         with zipfile.ZipFile(zip_path, "r") as zf:
             for name in filenames:
+                dest = (dest_dir / name).resolve()
+                if not dest.is_relative_to(dest_dir):
+                    raise ValueError(
+                        f"Refusing to extract {name!r}: path traversal detected"
+                    )
                 log.info(f"Extracting: {name}")
                 zf.extract(name, dest_dir)
-                extracted.append(dest_dir / name)
+                extracted.append(dest)
         return extracted
