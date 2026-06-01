@@ -74,7 +74,7 @@ pytz==2026.1.post1
     # via apscheduler
 pyyaml==6.0.3
     # via uvicorn
-requests==2.32.3
+requests==2.33.0
     # via fracfocus-data-api
 six==1.17.0
     # via apscheduler
