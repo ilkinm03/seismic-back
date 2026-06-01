@@ -67,8 +67,15 @@ class FracFocusRepository:
                 f' ON "{TABLE_NAME}" (CAST(longitude AS REAL))'
             ))
 
+    def _require_valid_column(self, column: str) -> None:
+        """Raises ValueError if column is not present in the table, preventing SQL injection."""
+        valid = self.get_table_columns()
+        if column not in valid:
+            raise ValueError(f"Column '{column}' does not exist in table '{TABLE_NAME}'")
+
     def get_distinct_values(self, column: str) -> list[str]:
         """Returns sorted distinct non-empty values for the given column."""
+        self._require_valid_column(column)
         with self.engine.connect() as conn:
             rows = conn.execute(
                 text(
@@ -81,6 +88,7 @@ class FracFocusRepository:
 
     def get_grouped_counts(self, column: str) -> list[dict]:
         """Returns value + row count for each distinct value, sorted by count desc."""
+        self._require_valid_column(column)
         with self.engine.connect() as conn:
             rows = conn.execute(
                 text(
